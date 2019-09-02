@@ -1,0 +1,271 @@
+<style type="text/css">
+	* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.8rem;
+}
+
+.wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2 {
+  font-size: 2rem;
+  text-align: center;
+  font-weight: normal;
+  padding: 0.5rem 0 0 0;
+}
+
+.main-controls {
+  padding: 0.5rem 0;
+}
+
+#buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+#buttons button {
+  font-size: 1rem;
+  padding: 1rem;
+  width: calc(50% - 0.25rem);
+}
+
+button {
+  font-size: 1rem;
+  background: #0088cc;
+  text-align: center;
+  color: white;
+  border: none;
+  transition: all 0.2s;
+  padding: 0.5rem;
+}
+
+button:hover, button:focus {
+  box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
+  background: #0ae;
+}
+
+button:active {
+  box-shadow: inset 0px 0px 20px rgba(0,0,0,0.5);
+  transform: translateY(2px);
+}
+
+
+/* Make the clips use as much space as possible, and
+ * also show a scrollbar when there are too many clips to show
+ * in the available space */
+.sound-clips {
+  flex: 1;
+  overflow: auto;
+}
+
+section, article {
+  display: block;
+}
+
+.clip {
+  padding-bottom: 1rem;
+}
+
+audio {
+  width: 100%;
+  display: block;
+  margin: 1rem auto 0.5rem;
+}
+
+.clip p {
+  display: inline-block;
+  font-size: 1rem;
+}
+
+.clip button {
+  font-size: 1rem;
+  float: right;
+}
+
+button.delete {
+  background: #f00;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Checkbox hack to control information box display */
+
+label {
+  font-size: 3rem;
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  z-index: 5;
+  cursor: pointer;
+}
+
+input[type=checkbox] {
+   position: absolute;
+   top: -100px;
+}
+
+aside {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: translateX(100%);
+  transition: 0.3s all ease-out;
+  background-color: #efefef;
+  padding: 1rem;
+}
+
+aside p {
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+}
+
+aside a {
+  color: #666;
+}
+
+/* Toggled State of information box */
+input[type=checkbox]:checked ~ aside {
+  transform: translateX(0);
+}
+
+/* Cursor when clip name is clicked over */
+
+.clip p {
+  cursor: pointer;
+}
+
+/* Adjustments for wider screens */
+@media all and (min-width: 800px) {
+  /* Don't take all the space as readability is lost when line length
+     goes past a certain size */
+  .wrapper {
+    width: 90%;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+}
+</style>
+
+<h1>Chat room</h1>
+<div id="messages">
+  <%= render @notifications%>
+</div>
+<form class="sound-recorder">
+  <label>Say something:</label><br>
+  <input type="text" data-behavior="notification_speaker"></br>
+</form>
+<div class="wrapper">
+  <section class="main-controls">
+    <div id="buttons">
+      <button class="record">Record</button>
+      <button class="stop">Stop</button>
+    </div>
+  </section>
+  <section class="sound-clips"></section>
+</div>
+
+<script type="text/javascript">
+	// fork getUserMedia for multiple browser versions, for the future
+	// when more browsers support MediaRecorder
+	navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+	// set up basic variables for app
+	var record = document.querySelector('.record');
+	var stop = document.querySelector('.stop');
+	var soundClips = document.querySelector('.sound-clips');
+	// disable stop button while not recording
+	stop.disabled = true;
+	var audioCtx = new (window.AudioContext || webkitAudioContext)();
+	//main block for doing the audio recording
+	if (navigator.getUserMedia) {
+	  console.log('getUserMedia supported.');
+	  var constraints = { audio: true };
+	  var chunks = [];
+	  var onSuccess = function(stream) {
+	    var mediaRecorder = new MediaRecorder(stream);
+	    record.onclick = function() {
+	      mediaRecorder.start();
+	      console.log(mediaRecorder.state);
+	      console.log("recorder started");
+	      record.style.background = "red";
+	      stop.disabled = false;
+	      record.disabled = true;
+	    }
+	    stop.onclick = function() {
+	      mediaRecorder.stop();
+	      console.log(mediaRecorder.state);
+	      console.log("recorder stopped");
+	      record.style.background = "";
+	      record.style.color = "";
+	      // mediaRecorder.requestData();
+	      stop.disabled = true;
+	      record.disabled = false;
+	    }
+	    mediaRecorder.onstop = function(e) {
+	      console.log("data available after MediaRecorder.stop() called.");
+	      var clipName = prompt('Enter a name for your sound clip?','My unnamed clip');
+	      console.log(clipName);
+	      var clipContainer = document.createElement('article');
+	      var clipLabel = document.createElement('p');
+	      var audio = document.createElement('audio');
+	      var deleteButton = document.createElement('button');
+	      clipContainer.classList.add('clip');
+	      audio.setAttribute('controls', 'controls');
+	      deleteButton.textContent = 'Delete';
+	      deleteButton.className = 'delete';
+	      if(clipName === null) {
+	        clipLabel.textContent = 'My unnamed clip';
+	      } else {
+	        clipLabel.textContent = clipName;
+	      }
+	      clipContainer.appendChild(audio);
+	      clipContainer.appendChild(clipLabel);
+	      clipContainer.appendChild(deleteButton);
+	      soundClips.appendChild(clipContainer);
+	      audio.controls = true;
+	      var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+	      chunks = [];
+	      var audioURL = window.URL.createObjectURL(blob);
+	      audio.src = audioURL;
+	      console.log("recorder stopped");
+	      deleteButton.onclick = function(e) {
+	        evtTgt = e.target;
+	        evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+	      }
+	      clipLabel.onclick = function() {
+	        var existingName = clipLabel.textContent;
+	        var newClipName = prompt('Enter a new name for your sound clip?');
+	        if(newClipName === null) {
+	          clipLabel.textContent = existingName;
+	        } else {
+	          clipLabel.textContent = newClipName;
+	        }
+	      }
+	    }
+	    mediaRecorder.ondataavailable = function(e) {
+	      chunks.push(e.data);
+	    }
+	  }
+	  var onError = function(err) {
+	    console.log('The following error occured: ' + err);
+	  }
+	  navigator.getUserMedia(constraints, onSuccess, onError);
+	} else {
+	  console.log('getUserMedia not supported on your browser!');
+	}
+</script>

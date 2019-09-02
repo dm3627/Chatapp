@@ -1,0 +1,28 @@
+development:
+  adapter: postgresql
+  encoding: unicode
+  database: Chatapp
+  port: 5432
+  username: root
+  password: exa10sept
+  host: localhost
+
+production:
+  adapter: postgresql
+  encoding: unicode
+  database: <%= ENV['PRODUCTION_DATABASE']%>
+  port: 5432
+  username: <%= ENV['PRODUCTION_USERNAME']%>
+  password: <%= ENV['PRODUCTION_PASSWORD']%>
+  host: <%= ENV['PRODUCTION_HOST']%>
+  pool: 40
+  timeout: 15000
+
+test:
+  adapter: postgresql
+  encoding: unicode
+  database: Chatapp
+  port: 5432 
+  username: root
+  password: exa10sept
+  host: localhost
